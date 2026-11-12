@@ -1,0 +1,35 @@
+name: AWS Emulator
+description: Start AWS Emulator in Docker for GitHub Actions
+author: willhallonline
+branding:
+  icon: cloud
+  color: orange
+inputs:
+  port:
+    description: Host and emulator HTTPS port
+    required: false
+    default: "9297"
+  telemetry:
+    description: Whether AWS Emulator telemetry is on or off
+    required: false
+    default: "off"
+  startup-timeout:
+    description: Seconds to wait for the emulator health check
+    required: false
+    default: "120"
+outputs:
+  endpoint_url:
+    description: HTTPS endpoint URL for the emulator
+  ca_bundle:
+    description: Path to the emulator CA certificate
+  config_file:
+    description: Path to the generated AWS config file
+  credentials_file:
+    description: Path to generated emulator credentials
+  container_name:
+    description: Docker container name
+runs:
+  using: node24
+  main: index.js
+  post: index.js
+  post-if: always()
