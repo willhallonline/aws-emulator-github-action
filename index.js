@@ -28,7 +28,7 @@ function getRequiredEnv(name) {
 }
 
 function getIntegerInput(name, defaultValue, min, max) {
-  const raw = process.env[`INPUT_${name.toUpperCase().replaceAll('-', '_')}`] || defaultValue;
+  const raw = process.env[`INPUT_${name.toUpperCase()}`] || defaultValue;
   if (!/^\d+$/.test(raw)) {
     throw new Error(`Input "${name}" must be an integer.`);
   }
@@ -37,6 +37,14 @@ function getIntegerInput(name, defaultValue, min, max) {
     throw new Error(`Input "${name}" must be between ${min} and ${max}.`);
   }
   return value;
+}
+
+function getEmulatorVersion() {
+  const version = process.env['INPUT_EMULATOR-VERSION'] || 'latest';
+  if (version !== 'latest' && !/^\d+(?:\.\d+){2,3}$/.test(version)) {
+    throw new Error('Input "emulator-version" must be "latest" or a dotted numeric version.');
+  }
+  return version;
 }
 
 function getPackageArchitecture() {
@@ -94,22 +102,25 @@ async function waitForReady(containerName, url, caPath, timeoutSeconds) {
 }
 
 async function start() {
+  const stateFile = getRequiredEnv('GITHUB_STATE');
+  appendEnv(stateFile, { action_initialized: 'true' });
+
   if (process.platform !== 'linux') {
     throw new Error('AWS Emulator GitHub Action requires a Linux runner with Docker.');
   }
 
   const port = getIntegerInput('port', '9297', 1, 65535);
   const timeoutSeconds = getIntegerInput('startup-timeout', '120', 1, 3600);
+  const emulatorVersion = getEmulatorVersion();
   const telemetry = process.env.INPUT_TELEMETRY || 'off';
   if (!['on', 'off'].includes(telemetry)) {
     throw new Error('Input "telemetry" must be "on" or "off".');
   }
 
-  const githubActionPath = getRequiredEnv('GITHUB_ACTION_PATH');
+  const githubActionPath = __dirname;
   const runnerTemp = getRequiredEnv('RUNNER_TEMP');
   const outputFile = getRequiredEnv('GITHUB_OUTPUT');
   const envFile = getRequiredEnv('GITHUB_ENV');
-  const stateFile = getRequiredEnv('GITHUB_STATE');
   const runnerUid = typeof process.getuid === 'function' ? process.getuid() : null;
   const runnerGid = typeof process.getgid === 'function' ? process.getgid() : null;
   if (runnerUid === null || runnerGid === null) {
@@ -138,6 +149,8 @@ async function start() {
     '--pull',
     '--build-arg',
     `EMULATOR_ARCH=${getPackageArchitecture()}`,
+    '--build-arg',
+    `EMULATOR_VERSION=${emulatorVersion}`,
     '--tag',
     imageTag,
     githubActionPath,
@@ -212,7 +225,7 @@ function stop() {
   console.log(`Stopped AWS Emulator container ${containerName}.`);
 }
 
-if (process.env.STATE_container_name) {
+if (process.env.STATE_action_initialized) {
   try {
     stop();
   } catch (error) {

@@ -1,0 +1,53 @@
+name: Action smoke test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  emulator:
+    name: Emulator (${{ matrix.emulator-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        emulator-version:
+          - latest
+          - "1.0.322.1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reject invalid startup timeout
+        uses: ./
+        id: invalid-timeout
+        continue-on-error: true
+        with:
+          startup-timeout: not-an-integer
+
+      - name: Check timeout validation
+        if: steps.invalid-timeout.outcome != 'failure'
+        run: exit 1
+
+      - name: Start AWS Emulator
+        uses: ./
+        id: emulator
+        with:
+          emulator-version: ${{ matrix.emulator-version }}
+          startup-timeout: "180"
+
+      - name: Verify emulator setup
+        shell: bash
+        run: |
+          test "$AWS_ENDPOINT_URL" = "${{ steps.emulator.outputs.endpoint_url }}"
+          test "$AWS_CA_BUNDLE" = "${{ steps.emulator.outputs.ca_bundle }}"
+          test -s "$AWS_CA_BUNDLE"
+          test -s "$AWS_CONFIG_FILE"
+          test -s "$AWS_SHARED_CREDENTIALS_FILE"
+          test "$(curl --fail --silent --show-error --cacert "$AWS_CA_BUNDLE" "$AWS_ENDPOINT_URL/__admin/health")" = "ok"
+          test "$(aws sts get-caller-identity --query Account --output text)" = "000000000000"

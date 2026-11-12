@@ -2,7 +2,7 @@ name: AWS Emulator
 description: Start AWS Emulator in Docker for GitHub Actions
 author: willhallonline
 branding:
-  icon: cloud
+  icon: server
   color: orange
 inputs:
   port:
@@ -17,6 +17,10 @@ inputs:
     description: Seconds to wait for the emulator health check
     required: false
     default: "120"
+  emulator-version:
+    description: AWS Emulator LTS version to install, or latest
+    required: false
+    default: latest
 outputs:
   endpoint_url:
     description: HTTPS endpoint URL for the emulator
