@@ -28,7 +28,7 @@ function getRequiredEnv(name) {
 }
 
 function getIntegerInput(name, defaultValue, min, max) {
-  const raw = process.env[`INPUT_${name.toUpperCase().replaceAll('-', '_')}`] || defaultValue;
+  const raw = process.env[`INPUT_${name.toUpperCase()}`] || defaultValue;
   if (!/^\d+$/.test(raw)) {
     throw new Error(`Input "${name}" must be an integer.`);
   }
@@ -37,6 +37,14 @@ function getIntegerInput(name, defaultValue, min, max) {
     throw new Error(`Input "${name}" must be between ${min} and ${max}.`);
   }
   return value;
+}
+
+function getEmulatorVersion() {
+  const version = process.env['INPUT_EMULATOR-VERSION'] || 'latest';
+  if (version !== 'latest' && !/^\d+(?:\.\d+){2,3}$/.test(version)) {
+    throw new Error('Input "emulator-version" must be "latest" or a dotted numeric version.');
+  }
+  return version;
 }
 
 function getPackageArchitecture() {
@@ -100,6 +108,7 @@ async function start() {
 
   const port = getIntegerInput('port', '9297', 1, 65535);
   const timeoutSeconds = getIntegerInput('startup-timeout', '120', 1, 3600);
+  const emulatorVersion = getEmulatorVersion();
   const telemetry = process.env.INPUT_TELEMETRY || 'off';
   if (!['on', 'off'].includes(telemetry)) {
     throw new Error('Input "telemetry" must be "on" or "off".');
@@ -138,6 +147,8 @@ async function start() {
     '--pull',
     '--build-arg',
     `EMULATOR_ARCH=${getPackageArchitecture()}`,
+    '--build-arg',
+    `EMULATOR_VERSION=${emulatorVersion}`,
     '--tag',
     imageTag,
     githubActionPath,
