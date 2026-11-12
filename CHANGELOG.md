@@ -18,6 +18,7 @@ Notable changes to this project are documented here.
 ### Fixed
 
 - Read the hyphenated `startup-timeout` input from the correct GitHub Actions environment variable.
+- Use the action's script directory for the Docker build and avoid retrying startup during post-job cleanup after an early failure.
 
 ## [1.0.0] - 2026-11-12
 
