@@ -2,28 +2,43 @@
 
 Start [AWS Emulator](https://github.com/aws/aws-emulator) in a Docker container for a GitHub Actions job. The action waits for the emulator's HTTPS health check, exposes it only on the runner's loopback interface, configures AWS environment variables for later steps, and stops the container after the job.
 
-AWS does not publish a prebuilt container image. This action builds one from the official AWS Emulator Linux package, following the [AWS Docker setup guide](https://docs.aws.amazon.com/emulator/latest/userguide/getting-started-docker.html). By default, it downloads the latest LTS package at build time.
+AWS does not publish a prebuilt container image. This action builds one from the official AWS Emulator Linux package, following the [AWS Docker setup guide](https://docs.aws.amazon.com/emulator/latest/userguide/getting-started-docker.html). By default, it downloads the latest LTS package when Docker executes the package installation step. A persistent runner may reuse a cached build layer instead of downloading a newer version.
 
 The package's detached signature is verified against AWS's published signing key before installation. The `emulator-version` input can pin a specific LTS version; see [AWS Emulator versioning](https://docs.aws.amazon.com/emulator/latest/userguide/versioning.html#versioning-list) for available versions. The default remains `latest`.
 
 ## Usage
 
+Create `.github/workflows/emulator.yml` in your repository. The example uses a
+GitHub-hosted Linux runner with Docker and the AWS CLI. Keep real AWS credentials
+and `AWS_PROFILE` out of this job.
+
 ```yaml
-steps:
-  - uses: actions/checkout@v4
+name: Test with AWS Emulator
+on: [push, pull_request]
 
-  - name: Start AWS Emulator
-    uses: willhallonline/aws-emulator-github-action@v1.0.2
-    id: emulator
+permissions:
+  contents: read
 
-  - name: Check emulator health
-    run: |
-      curl --fail --silent --show-error \
-        --cacert "$AWS_CA_BUNDLE" \
-        "$AWS_ENDPOINT_URL/__admin/health"
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start AWS Emulator
+        uses: willhallonline/aws-emulator-github-action@v1.0.3
+
+      - name: Verify the emulator identity
+        shell: bash
+        run: |
+          account="$(aws sts get-caller-identity --query Account --output text)"
+          test "$account" = "000000000000"
 ```
 
-The example uses the published `v1.0.2` tag. You can instead pin a commit SHA. The action requires a Linux runner with Docker available.
+The action requires a Linux runner with Docker available. The example uses the
+published `v1.0.3` tag; for stronger supply-chain reproducibility, pin the
+action to a verified full commit SHA. Pin `emulator-version` as well if your
+tests must use the same emulator release on every run. The action builds an
+image before startup, exports its generated CA certificate for compatible AWS
+clients, and cleans up its container and temporary files after the job.
 
 By default, the action turns telemetry off and configures these variables for subsequent workflow steps:
 
@@ -44,7 +59,7 @@ The action makes the emulator settings available to **subsequent steps in the sa
 
 ```yaml
 - name: Start AWS Emulator
-  uses: willhallonline/aws-emulator-github-action@v1.0.2
+  uses: willhallonline/aws-emulator-github-action@v1.0.3
   id: emulator
 
 - name: Verify the emulator and list S3 buckets
@@ -87,7 +102,7 @@ For example, after checking out your repository and setting up Terraform, run it
 
 ```yaml
 - name: Start AWS Emulator
-  uses: willhallonline/aws-emulator-github-action@v1.0.2
+  uses: willhallonline/aws-emulator-github-action@v1.0.3
   id: emulator
 
 - uses: hashicorp/setup-terraform@v3
@@ -122,6 +137,27 @@ The provider settings above are for Terraform-managed resources. Terraform's S3 
 
 The action also stops and removes its container and temporary files automatically when the job finishes.
 
+## Troubleshooting
+
+- **Docker is unavailable:** Use a Linux runner with a working Docker daemon.
+- **The port is already in use:** Choose another available `port`; it must be
+  between 1 and 65535.
+- **Startup times out:** Check the container logs included in the error and
+  increase `startup-timeout` if needed. This timeout covers the health check
+  after container startup, not the Docker image build or package download.
+- **Certificate errors:** Use the generated CA bundle. Some SDKs require
+  additional TLS configuration; see the SDK guidance above.
+- **Unexpected AWS identity or endpoint:** Remove real AWS credentials and
+  `AWS_PROFILE` from the emulator test environment, and verify that the client
+  supports the endpoint settings described above.
+- **Unsupported operation:** Consult the AWS Emulator service guide linked in
+  the Terraform section; not every AWS service or operation is supported.
+
 ## License
 
 This action's source code is licensed under the MIT License. AWS Emulator is a separate project; see its [repository](https://github.com/aws/aws-emulator) and [documentation](https://docs.aws.amazon.com/emulator/latest/userguide/what-is-service.html) for its terms and usage.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development and validation guidance.
+Report problems or suggest improvements in the [issue tracker](https://github.com/willhallonline/aws-emulator-github-action/issues).

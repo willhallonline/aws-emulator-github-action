@@ -51,3 +51,4 @@ jobs:
           test -s "$AWS_SHARED_CREDENTIALS_FILE"
           test "$(curl --fail --silent --show-error --cacert "$AWS_CA_BUNDLE" "$AWS_ENDPOINT_URL/__admin/health")" = "ok"
           test "$(aws sts get-caller-identity --query Account --output text)" = "000000000000"
+          aws s3 ls
