@@ -2,6 +2,15 @@
 
 Notable changes to this project are documented here.
 
+## [1.0.3] - 2026-11-19
+
+### Changed
+
+- Add a complete first-run workflow, troubleshooting guidance, and a contribution link.
+- Document that Docker may reuse a cached package layer on persistent runners.
+- Update usage examples to reference the v1.0.3 release.
+- Exercise the documented AWS CLI S3 example in the smoke workflow.
+
 ## [1.0.2] - 2026-11-14
 
 ### Added
