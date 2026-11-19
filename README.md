@@ -13,7 +13,7 @@ steps:
   - uses: actions/checkout@v4
 
   - name: Start AWS Emulator
-    uses: willhallonline/aws-emulator-github-action@v1.0.1
+    uses: willhallonline/aws-emulator-github-action@v1.0.2
     id: emulator
 
   - name: Check emulator health
@@ -23,7 +23,7 @@ steps:
         "$AWS_ENDPOINT_URL/__admin/health"
 ```
 
-The example uses the published `v1.0.1` tag. You can instead pin a commit SHA. The action requires a Linux runner with Docker available.
+The example uses the published `v1.0.2` tag. You can instead pin a commit SHA. The action requires a Linux runner with Docker available.
 
 By default, the action turns telemetry off and configures these variables for subsequent workflow steps:
 
@@ -44,7 +44,7 @@ The action makes the emulator settings available to **subsequent steps in the sa
 
 ```yaml
 - name: Start AWS Emulator
-  uses: willhallonline/aws-emulator-github-action@v1.0.1
+  uses: willhallonline/aws-emulator-github-action@v1.0.2
   id: emulator
 
 - name: Verify the emulator and list S3 buckets
@@ -87,7 +87,7 @@ For example, after checking out your repository and setting up Terraform, run it
 
 ```yaml
 - name: Start AWS Emulator
-  uses: willhallonline/aws-emulator-github-action@v1.0.1
+  uses: willhallonline/aws-emulator-github-action@v1.0.2
   id: emulator
 
 - uses: hashicorp/setup-terraform@v3
